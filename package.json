@@ -9,7 +9,7 @@
     "restart": "pm2 restart MALINDU AI BOT"
   },
   "dependencies": {
-    "@whiskeysockets/baileys": "letast",
+    "@whiskeysockets/baileys": "latest",
     "api-dylux": "^1.8.5",
     "axios": "^1.13.2",
     "browser-id3-writer": "^6.3.1",
