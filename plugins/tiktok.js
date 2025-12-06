@@ -1,32 +1,33 @@
-const { tiktok } = require("@mrnima/tiktok-downloader");
+// plugins/tiktok.js
+const axios = require('axios');
+const fs = require('fs');
+const { getBuffer } = require('../lib/functions');
 
 module.exports = {
-    name: "tiktok",
-    alias: ["tt","tiktokdl"],
-    desc: "Download TikTok video",
-    react: "🎬",
-    category: "download",
-    start: async (client, m, { text }) => {
+  pattern: 'tt',
+  alias: ['tiktok'],
+  desc: 'Download TikTok video',
+  async function(bot, mek, m, { q, from, reply }) {
+    if (!q) return reply('❌ Please provide a TikTok URL.\n\nUsage: .tt <TikTok URL>');
 
-        if (!text) return m.reply("🔍 *TikTok link danna!*");
+    try {
+      // TikTok video info API
+      const apiUrl = `https://api.tikmate.app/api/lookup?url=${encodeURIComponent(q)}`;
+      const res = await axios.get(apiUrl);
 
-        try {
-            m.reply("⬇️ TikTok Video download කරමින්...");
+      if (!res.data || !res.data.video) {
+        return reply('❌ Could not fetch TikTok video. Make sure the URL is correct.');
+      }
 
-            const result = await tiktok(text); 
+      const videoUrl = res.data.video.no_watermark || res.data.video.watermark;
 
-            if (!result || !result.video) {
-                return m.reply("❌ Video download වෙන්නේ නෑ!");
-            }
+      const buffer = await getBuffer(videoUrl);
 
-            await client.sendMessage(m.chat, { 
-                video: { url: result.video }, 
-                caption: "✅ *TikTok Video Downloaded* 🎬"
-            }, { quoted: m });
+      await bot.sendMessage(from, { video: buffer, caption: '✅ TikTok Video Downloaded!' }, { quoted: mek });
 
-        } catch (e) {
-            console.log(e);
-            m.reply("❌ Error: TikTok download failed!");
-        }
+    } catch (err) {
+      console.error(err);
+      reply('❌ Error downloading TikTok video.');
     }
+  }
 };
