@@ -47,7 +47,7 @@ cmd(
       const url = data.url;
 
       let desc = `
-🎧*MALINDU AI BOT SONG DOWNLOADER*🎧
+
 🎬 *Title:* ${data.title}
 ⏱️ *Duration:* ${data.timestamp}
 📅 *Uploaded:* ${data.ago}
