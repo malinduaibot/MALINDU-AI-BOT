@@ -1,50 +1,43 @@
 const { cmd } = require("../command");
-const ttdl = require("@mrnima/tiktok-downloader");
 const axios = require("axios");
 
 cmd(
   {
     pattern: "tt",
-    react: "🎬",
     desc: "Download TikTok Video",
-    category: "download",
+    category: "downloader",
+    react: "🎬",
     filename: __filename,
   },
-  async (
-    bot,
-    mek,
-    m,
-    { from, q, reply }
-  ) => {
+  async (bot, mek, msg, { reply, q, from }) => {
     try {
-      if (!q) return reply("❌ *TikTok video link එක දෙන්න!*\n\nExample:\n.tt https://www.tiktok.com/xxxx");
+      if (!q) return reply("❌ *TikTok link එක දෙන්න!*\n\nExample: .tt https://www.tiktok.com/xxxx");
 
-      reply("⏳ *Processing your TikTok video...*");
+      reply("⏳ *Downloading your TikTok video...*\nPlease wait...");
 
-      //--- Download using @mrnima/tiktok-downloader
-      const data = await ttdl(q);
+      // Use @mrnima/tiktok-downloader API
+      const api = `https://api.nima-ytproject.workers.dev/tiktok?url=${q}`;
 
-      if (!data || !data.result || !data.result.video1) {
-        return reply("❌ *Video download failed!*");
+      const res = await axios.get(api);
+
+      if (!res.data || !res.data.result || !res.data.result.video) {
+        return reply("❌ *Video download failed!* Try another link.");
       }
 
-      const videoUrl = data.result.video1;
+      const video = res.data.result.video; // No Watermark Video URL
 
-      //--- Send Video to user
       await bot.sendMessage(
         from,
         {
-          video: { url: videoUrl },
-          caption: "🎉 *TikTok Video Downloaded Successfully!*"
+          video: { url: video },
+          caption: "🎉 *TikTok Video Downloaded Successfully!*",
         },
         { quoted: mek }
       );
 
-      reply("✅ *Thanks for using Malindu AI BOT!*");
-
     } catch (e) {
       console.log(e);
-      reply("❌ *Error:* Video link එක වැරදි. වෙන link එකක් දාන්න.");
+      reply("❌ *Download error!* TikTok link එක check කරන්න.");
     }
   }
 );
