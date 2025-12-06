@@ -1,3 +1,6 @@
+// ========================
+//          IMPORTS
+// ========================
 const {
   default: makeWASocket,
   useMultiFileAuthState,
@@ -11,25 +14,27 @@ const {
 const fs = require('fs');
 const P = require('pino');
 const express = require('express');
-const axios = require('axios');
 const path = require('path');
-const qrcode = require('qrcode-terminal');
-
-const config = require('./config');
-const { sms, downloadMediaMessage } = require('./lib/msg');
-const {
-  getBuffer, getGroupAdmins, getRandom, h2k, isUrl, Json, runtime, sleep, fetchJson
-} = require('./lib/functions');
 const { File } = require('megajs');
+
+const { sms, downloadMediaMessage } = require('./lib/msg');
+const { getBuffer, getGroupAdmins, getRandom } = require('./lib/functions');
 const { commands, replyHandlers } = require('./command');
+const config = require('./config');
 
 const app = express();
 const port = process.env.PORT || 8000;
 
+// ========================
+//        CONFIG
+// ========================
 const prefix = '.';
 const ownerNumber = ['94701369636'];
 const credsPath = path.join(__dirname, '/auth_info_baileys/creds.json');
 
+// ========================
+//   ENSURE SESSION FILE
+// ========================
 async function ensureSessionFile() {
   if (!fs.existsSync(credsPath)) {
     if (!config.SESSION_ID) {
@@ -39,8 +44,7 @@ async function ensureSessionFile() {
 
     console.log("🔄 creds.json not found. Downloading session from MEGA...");
 
-    const sessdata = config.SESSION_ID;
-    const filer = File.fromURL(`https://mega.nz/file/${sessdata}`);
+    const filer = File.fromURL(`https://mega.nz/file/${config.SESSION_ID}`);
 
     filer.download((err, data) => {
       if (err) {
@@ -51,17 +55,16 @@ async function ensureSessionFile() {
       fs.mkdirSync(path.join(__dirname, '/auth_info_baileys/'), { recursive: true });
       fs.writeFileSync(credsPath, data);
       console.log("✅ Session downloaded and saved. Restarting bot...");
-      setTimeout(() => {
-        connectToWA();
-      }, 2000);
+      setTimeout(connectToWA, 2000);
     });
   } else {
-    setTimeout(() => {
-      connectToWA();
-    }, 1000);
+    setTimeout(connectToWA, 1000);
   }
 }
 
+// ========================
+//      CONNECT TO WA
+// ========================
 async function connectToWA() {
   console.log("Connecting MALINDU AI BOT 🧬...");
   const { state, saveCreds } = await useMultiFileAuthState(path.join(__dirname, '/auth_info_baileys/'));
@@ -78,6 +81,9 @@ async function connectToWA() {
     generateHighQualityLinkPreview: true,
   });
 
+  // ========================
+  //  CONNECTION EVENTS
+  // ========================
   bot.ev.on('connection.update', async (update) => {
     const { connection, lastDisconnect } = update;
     if (connection === 'close') {
@@ -95,7 +101,8 @@ async function connectToWA() {
 
       fs.readdirSync("./plugins/").forEach((plugin) => {
         if (path.extname(plugin).toLowerCase() === ".js") {
-          require(`./plugins/${plugin}`);
+          const pl = require(`./plugins/${plugin}`);
+          if (pl.pattern) commands.push(pl);
         }
       });
     }
@@ -103,16 +110,16 @@ async function connectToWA() {
 
   bot.ev.on('creds.update', saveCreds);
 
+  // ========================
+  //     MESSAGE HANDLER
+  // ========================
   bot.ev.on('messages.upsert', async ({ messages }) => {
     for (const msg of messages) {
-      if (msg.messageStubType === 68) {
-        await bot.sendMessageAck(msg.key);
-      }
+      if (msg.messageStubType === 68) await bot.sendMessageAck(msg.key);
     }
 
     const mek = messages[0];
     if (!mek || !mek.message) return;
-
     mek.message = getContentType(mek.message) === 'ephemeralMessage' ? mek.message.ephemeralMessage.message : mek.message;
     if (mek.key.remoteJid === 'status@broadcast') return;
 
@@ -135,51 +142,10 @@ async function connectToWA() {
     const botNumber2 = await jidNormalizedUser(bot.user.id);
 
     const groupMetadata = isGroup ? await bot.groupMetadata(from).catch(() => {}) : '';
-    const groupName = isGroup ? groupMetadata.subject : '';
-    const participants = isGroup ? groupMetadata.participants : '';
-    const groupAdmins = isGroup ? await getGroupAdmins(participants) : '';
+    const groupAdmins = isGroup ? await getGroupAdmins(groupMetadata.participants) : '';
     const isBotAdmins = isGroup ? groupAdmins.includes(botNumber2) : false;
     const isAdmins = isGroup ? groupAdmins.includes(sender) : false;
 
     const reply = (text) => bot.sendMessage(from, { text }, { quoted: mek });
 
-    if (isCmd) {
-      const cmd = commands.find((c) => c.pattern === commandName || (c.alias && c.alias.includes(commandName)));
-      if (cmd) {
-        if (cmd.react) bot.sendMessage(from, { react: { text: cmd.react, key: mek.key } });
-        try {
-          cmd.function(bot, mek, m, {
-            from, quoted: mek, body, isCmd, command: commandName, args, q,
-            isGroup, sender, senderNumber, botNumber2, botNumber, pushname,
-            isMe, isOwner, groupMetadata, groupName, participants, groupAdmins,
-            isBotAdmins, isAdmins, reply,
-          });
-        } catch (e) {
-          console.error("[PLUGIN ERROR]", e);
-        }
-      }
-    }
-
-    const replyText = body;
-    for (const handler of replyHandlers) {
-      if (handler.filter(replyText, { sender, message: mek })) {
-        try {
-          await handler.function(bot, mek, m, {
-            from, quoted: mek, body: replyText, sender, reply,
-          });
-          break;
-        } catch (e) {
-          console.log("Reply handler error:", e);
-        }
-      }
-    }
-  });
-}
-
-ensureSessionFile();
-
-app.get("/", (req, res) => {
-  res.send("Hey, MALINDU AI BOT started✅");
-});
-
-app.listen(port, () => console.log(`Server listening on http://localhost:${port}`));
+    // ==============
