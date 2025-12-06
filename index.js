@@ -87,7 +87,7 @@ async function connectToWA() {
     } else if (connection === 'open') {
       console.log('✅ MALINDU AI BOT connected to WhatsApp');
 
-      const up = `MALINDU AI BOT connected ✅\n\nPREFIX: ${prefix}`;
+      const up = `MALINDU AI BOT connected ✅ More Information Send *.menu* or *alive* Contact us *0701369636\n\nPREFIX: ${prefix}`;
       await bot.sendMessage(ownerNumber[0] + "@s.whatsapp.net", {
         image: { url: `https://github.com/malinduaibot/MALINDU-AI-BOT/blob/main/image/Gemini_Generated_Image_v9u69gv9u69gv9u6.png?raw=true` },
         caption: up
