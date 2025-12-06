@@ -1,43 +1,39 @@
 const { cmd } = require("../command");
-const axios = require("axios");
+const tiktok = require("@mrnima/tiktok-downloader");
 
 cmd(
   {
     pattern: "tt",
-    desc: "Download TikTok Video",
-    category: "downloader",
-    react: "🎬",
+    react: "📥",
+    desc: "Download TikTok Video (Only video with original sound)",
+    category: "download",
     filename: __filename,
   },
-  async (bot, mek, msg, { reply, q, from }) => {
+
+  async (bot, mek, m, { from, q, reply }) => {
     try {
-      if (!q) return reply("❌ *TikTok link එක දෙන්න!*\n\nExample: .tt https://www.tiktok.com/xxxx");
+      if (!q) return reply("❌ *TikTok link ekak denna!*");
 
-      reply("⏳ *Downloading your TikTok video...*\nPlease wait...");
+      reply("🔄 *Downloading TikTok video...*");
 
-      // Use @mrnima/tiktok-downloader API
-      const api = `https://api.nima-ytproject.workers.dev/tiktok?url=${q}`;
+      const data = await tiktok(q);
 
-      const res = await axios.get(api);
-
-      if (!res.data || !res.data.result || !res.data.result.video) {
-        return reply("❌ *Video download failed!* Try another link.");
+      if (!data || !data.video) {
+        return reply("❌ *Video not downloading please check the link!*");
       }
-
-      const video = res.data.result.video; // No Watermark Video URL
 
       await bot.sendMessage(
         from,
         {
-          video: { url: video },
-          caption: "🎉 *TikTok Video Downloaded Successfully!*",
+          video: { url: data.video },
+          caption: "✅ *TikTok Video Uploaded on Malindu AI BOT!*",
         },
         { quoted: mek }
       );
 
     } catch (e) {
       console.log(e);
-      reply("❌ *Download error!* TikTok link එක check කරන්න.");
+      reply("❌ *Error tiktok download :* " + e.message);
     }
   }
 );
