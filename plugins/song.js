@@ -47,7 +47,7 @@ cmd(
       const url = data.url;
 
       let desc = `
-Song downloader
+🎧*MALINDU AI BOT SONG DOWNLOADER*🎧
 🎬 *Title:* ${data.title}
 ⏱️ *Duration:* ${data.timestamp}
 📅 *Uploaded:* ${data.ago}
@@ -94,7 +94,13 @@ Song downloader
         { quoted: mek }
       );
 
-      return reply("✅ Thank you");
+      // 🔹 Final reply in MALINDU AI BOT style
+      return reply(
+        "✅ *Song downloaded successfully!* 🎶\n\n" +
+        "*🎧 Enjoy your music!*\n" +
+        "*👤 Creator:* Malindu Nadith\n\n" +
+        "🙏 Thanks for using *MALINDU AI BOT*"
+      );
     } catch (e) {
       console.log(e);
       reply(`❌ *Error:* ${e.message} 😞`);
