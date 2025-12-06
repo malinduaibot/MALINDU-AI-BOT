@@ -1,39 +1,54 @@
 const { cmd } = require("../command");
-const tiktok = require("@mrnima/tiktok-downloader");
+const ttdl = require("@mrnima/tiktok-downloader");
 
 cmd(
   {
     pattern: "tt",
-    react: "📥",
-    desc: "Download TikTok Video (Only video with original sound)",
+    react: "🎬",
+    desc: "Download TikTok Video",
     category: "download",
     filename: __filename,
   },
 
-  async (bot, mek, m, { from, q, reply }) => {
+  async (
+    bot,
+    mek,
+    m,
+    { from, q, reply }
+  ) => {
     try {
-      if (!q) return reply("❌ *TikTok link ekak denna!*");
+      if (!q) return reply("❌ *Please send a TikTok video link!*");
 
-      reply("🔄 *Downloading TikTok video...*");
+      // TikTok API call
+      const res = await ttdl.tiktok(q);
 
-      const data = await tiktok(q);
-
-      if (!data || !data.video) {
-        return reply("❌ *Video not downloading please check the link!*");
+      if (!res || !res.video) {
+        return reply("❌ *Download failed! Try another link.*");
       }
 
+      // Send video info
       await bot.sendMessage(
         from,
         {
-          video: { url: data.video },
-          caption: "✅ *TikTok Video Uploaded on Malindu AI BOT!*",
+          image: { url: res.cover },
+          caption: `🎬 *TikTok Video Downloader*\n\n📌 *Title:* ${res.title}\n👤 *Author:* ${res.author.nickname}\n🔗 *Link:* ${q}`
+        },
+        { quoted: mek }
+      );
+
+      // Send video
+      await bot.sendMessage(
+        from,
+        {
+          video: { url: res.video.no_watermark },
+          caption: "🎉 *Here is your video (No Watermark)*"
         },
         { quoted: mek }
       );
 
     } catch (e) {
       console.log(e);
-      reply("❌ *Error tiktok download :* " + e.message);
+      reply("❌ *Error:* " + e.message);
     }
   }
 );
