@@ -1,54 +1,32 @@
-const { cmd } = require("../command");
-const ttdl = require("@mrnima/tiktok-downloader");
+const { tiktok } = require("@mrnima/tiktok-downloader");
 
-cmd(
-  {
-    pattern: "tt",
+module.exports = {
+    name: "tiktok",
+    alias: ["tt","tiktokdl"],
+    desc: "Download TikTok video",
     react: "🎬",
-    desc: "Download TikTok Video",
     category: "download",
-    filename: __filename,
-  },
+    start: async (client, m, { text }) => {
 
-  async (
-    bot,
-    mek,
-    m,
-    { from, q, reply }
-  ) => {
-    try {
-      if (!q) return reply("❌ *Please send a TikTok video link!*");
+        if (!text) return m.reply("🔍 *TikTok link danna!*");
 
-      // TikTok API call
-      const res = await ttdl.tiktok(q);
+        try {
+            m.reply("⬇️ TikTok Video download කරමින්...");
 
-      if (!res || !res.video) {
-        return reply("❌ *Download failed! Try another link.*");
-      }
+            const result = await tiktok(text); 
 
-      // Send video info
-      await bot.sendMessage(
-        from,
-        {
-          image: { url: res.cover },
-          caption: `🎬 *TikTok Video Downloader*\n\n📌 *Title:* ${res.title}\n👤 *Author:* ${res.author.nickname}\n🔗 *Link:* ${q}`
-        },
-        { quoted: mek }
-      );
+            if (!result || !result.video) {
+                return m.reply("❌ Video download වෙන්නේ නෑ!");
+            }
 
-      // Send video
-      await bot.sendMessage(
-        from,
-        {
-          video: { url: res.video.no_watermark },
-          caption: "🎉 *Here is your video (No Watermark)*"
-        },
-        { quoted: mek }
-      );
+            await client.sendMessage(m.chat, { 
+                video: { url: result.video }, 
+                caption: "✅ *TikTok Video Downloaded* 🎬"
+            }, { quoted: m });
 
-    } catch (e) {
-      console.log(e);
-      reply("❌ *Error:* " + e.message);
+        } catch (e) {
+            console.log(e);
+            m.reply("❌ Error: TikTok download failed!");
+        }
     }
-  }
-);
+};
